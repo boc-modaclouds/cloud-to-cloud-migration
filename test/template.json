@@ -1,0 +1,19 @@
+{
+  "sourceDbIP": "109.231.126.183",
+  "sourcePsUser": "cloudml",
+  "sourcePsPassword": "WjrXa0WGPdHSg8vgEb2V",
+  "sourceDbInstance": "SQLEXPRESS",
+  "sourceSaPassword": "NdFbAeb8Bwyj5CVTQRuz",
+  "targetDbIP": "178.22.68.249",
+  "targetPsUser": "cloudml",
+  "targetPsPassword": "xtMd6DYvqzzgrf3SPtm0",
+  "targetDbInstance": "SQLEXPRESS",
+  "targetSaPassword": "nULPUCcZfCT3A5WH8h7L",
+  "backupFolder": "c:\\backup",
+  "dbName": "acloud30",
+  "step2DeploymentModel". "step2.json",
+  "step3DeploymentModel". "step3.json",
+  "step4DeploymentModel". "step4.json",
+  "modelsAtRuntimeIp": "127.0.0.1",
+  "modelsAtRuntimePort": "9000"
+}
