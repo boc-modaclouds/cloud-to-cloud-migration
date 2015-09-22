@@ -1,2 +1,2 @@
 #Cloud-to-Cloud-Migration
-PowerShell scripts for migrating a cloud deployment from one IaaS provider to another using CloudML and SQlServer backup/restore
+This repository contains Python and PowerShell scripts for migrating a ADONIS:cloud deployment from one IaaS provider to another using PUppet powered MODAClouds Models@Runtime together with SQlServer backup/restore controlled through PowerShell Remoting.
