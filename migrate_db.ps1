@@ -1,7 +1,7 @@
 # Migration script for re-location of an ADONIS:cloud database
 # Author: stepan.seycek@boc-eu.com
 #
-# (c)2015 BOC Informations Systems GmbH
+# (c)2015 BOC Information Systems GmbH
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or

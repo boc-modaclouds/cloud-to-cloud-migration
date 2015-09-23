@@ -3,7 +3,7 @@
 # Migration scripts for re-location of an ADONIS:cloud service instance
 # Author: stepan.seycek@boc-eu.com
 #
-# (c)2015 BOC Informations Systems GmbH
+# (c)2015 BOC Information Systems GmbH
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -55,9 +55,6 @@ class ModelsAtRuntimeChange(object):
         fd.close()
         self.__log.info('- [step %d] enacting step %d deployment model ...' % (self.__step , self.__step))
         self.__client.deploy(deploymentModel)
-        # TODO: wait for completeion
-        self.__log.info('- [step %d] waiting for completion ...' % self.__step)
-        self.__log.info('- [step %d] deployment completed' % self.__step)
 
     def done(self):
         if self.__client: self.__client.close()

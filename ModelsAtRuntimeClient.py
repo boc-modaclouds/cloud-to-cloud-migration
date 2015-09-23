@@ -3,7 +3,7 @@
 # Migration scripts for re-location of an ADONIS:cloud service instance
 # Author: stepan.seycek@boc-eu.com
 #
-# (c)2015 BOC Informations Systems GmbH
+# (c)2015 BOC Information Systems GmbH
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -43,7 +43,7 @@ import websocket
 
 
 class ModelsAtRuntimeClient(object):
-    """ Class for connecting to models at runtime via websockets
+    """ Class for connecting to models at runtime via websocket
     """
 
     def __init__(self, host, port, loggingPrefix):
@@ -87,8 +87,8 @@ class ModelsAtRuntimeClient(object):
     def close(self):
         if self.__conn: self.__conn.close()
 
-    def getSnapshot(self, path):
-        self.__write('!getSnapshot { path: / }')
+    def getSnapshot(self, path = '/'):
+        self.__write('!getSnapshot { path: %s }' % path)
 
     def deploy(self, model):
         # reformat JSON to be on the safe side
@@ -104,13 +104,13 @@ class ModelsAtRuntimeClient(object):
         inboundMessageCounter = self.__getInboundMessageCounter()
         self.__conn.send(message)
         if wait_for_response:
+            self.__log.info('%swaiting for completion ...' % self.__loggingPrefix)
             waiting = 0
             while waiting < timeout:
                 try:
                     self.__mtx.acquire()
                     if inboundMessageCounter < self.__inboundMessageCounter:
                         if not expect or expect in self.__inboundMessages[len(self.__inboundMessages) - 1]:
-                            if 20 <= waiting: sys.stdout.write('\n')
                             break
                         else:
                             inboundMessageCounter = self.__inboundMessageCounter
@@ -119,6 +119,8 @@ class ModelsAtRuntimeClient(object):
                 time.sleep(1)
                 waiting += 1
                 if 0 == waiting % 20: sys.stdout.write('.')
+            if 20 <= waiting: sys.stdout.write('\n')
+            self.__log.info('%sdeployment completed' % self.__loggingPrefix)
 
 
     def __purgeInboundMessages(self):

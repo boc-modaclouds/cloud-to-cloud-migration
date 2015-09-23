@@ -3,7 +3,7 @@
 # Migration scripts for re-location of an ADONIS:cloud service instance
 # Author: stepan.seycek@boc-eu.com
 #
-# (c)2015 BOC Informations Systems GmbH
+# (c)2015 BOC Information Systems GmbH
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -33,7 +33,6 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from Constants import Constants
 import copy
 from Constants import Constants
 from DbMigration import DbMigration
@@ -46,7 +45,7 @@ class MigrationWorkflow (object):
     """
 
     def __init__(self, config):
-        self.__checkManifest(config)
+        MigrationWorkflow.__checkManifest(config)
         self.__config = config
         self.__checkIfModelsAtRuntimeIsOnline()
         step2Deployment = ModelsAtRuntimeChange(2, self.__deploymentChangeConfig(2))
@@ -86,7 +85,8 @@ class MigrationWorkflow (object):
         config[Constants['DB_MIGRATION_FULL']] = full
         return config
 
-    def __checkManifest(self, manifest):
+    @staticmethod
+    def __checkManifest(manifest):
         # we only check if the mandatory properties are contained
         for k in Constants.keys():
             if k.startswith('MANIFEST_') and Constants[k] not in manifest:
@@ -99,5 +99,5 @@ class MigrationWorkflow (object):
         try:
             conn.connect((host, port))
             conn.close()
-        except Exception, e:
+        except Exception:
             raise Exception('Cannot connect to Models@Runtime endpoint at %s:%d' % (host, port))
