@@ -32,8 +32,13 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import datetime
 import logging
 import socket
+import sys
+import thread
+import threading
+import time
 import websocket
 
 
@@ -48,6 +53,10 @@ class ModelsAtRuntimeClient(object):
         self.__host = host
         self.__port = port
         self.__conn = None
+        self.__inboundMessages = []
+        self.__inboundMessageCounter = 0
+        self.__mtx = threading.Lock()
+        self.__connected = False
 
     @staticmethod
     def __testConnection(host, port):
@@ -59,7 +68,21 @@ class ModelsAtRuntimeClient(object):
             raise Exception('Connection to ModelsAtRuntime at %s:%d failed' % (host, port))
 
     def connect(self):
-        self.__conn = websocket.create_connection('ws://%s:%d/' % (self.__host, self.__port))
+        self.__conn = websocket.WebSocketApp('ws://%s:%d/' % (self.__host, self.__port),
+                                             on_message = self.messageHandler,
+                                             on_error = self.errorHandler,
+                                             on_open = self.openHandler,
+                                             on_close = self.closeHandler)
+        thread.start_new_thread(self.__conn.run_forever, ())
+        self.__mtx.acquire()
+        connected = self.__connected
+        self.__mtx.release()
+        while not connected:
+            time.sleep(1)
+            self.__mtx.acquire()
+            connected = self.__connected
+            self.__mtx.release()
+
 
     def close(self):
         if self.__conn: self.__conn.close()
@@ -73,11 +96,62 @@ class ModelsAtRuntimeClient(object):
         additional = '!additional json-string:%s' % model
         # IMPORTANT: do not wait for a response here, you won't get it
         self.__write(additional, False)
-        self.__write('!extended { name : Deploy }')
+        self.__write('!extended { name : Deploy }', expect = '!ack {fromPeer:"Deploy", status:"completed"}')
 
-    def __write(self, message, wait_for_response = True):
+    def __write(self, message, wait_for_response = True, timeout = 3600, expect = ''):
         if not self.__conn: self.connect()
+        #self.__purgeInboundMessages()
+        inboundMessageCounter = self.__getInboundMessageCounter()
         self.__conn.send(message)
         if wait_for_response:
-            response = self.__conn.recv()
-            #self.__log.debug('%sGot response from models@runtime: %s' % (self.__loggingPrefix,response))
+            waiting = 0
+            while waiting < timeout:
+                try:
+                    self.__mtx.acquire()
+                    if inboundMessageCounter < self.__inboundMessageCounter:
+                        if not expect or expect in self.__inboundMessages[len(self.__inboundMessages) - 1]:
+                            if 20 <= waiting: sys.stdout.write('\n')
+                            break
+                        else:
+                            inboundMessageCounter = self.__inboundMessageCounter
+                finally:
+                    self.__mtx.release()
+                time.sleep(1)
+                waiting += 1
+                if 0 == waiting % 20: sys.stdout.write('.')
+
+
+    def __purgeInboundMessages(self):
+        try:
+            self.__mtx.acquire()
+            self.__inboundMessages = []
+        finally:
+            self.__mtx.release()
+
+    def messageHandler(self, ws, msg):
+        try:
+            self.__mtx.acquire()
+            self.__inboundMessageCounter +=1
+            self.__inboundMessages.append((self.__inboundMessageCounter, datetime.datetime.now(), msg))
+            self.__log.debug('%sgot message from M@R: %s' % (self.__loggingPrefix, msg))
+        finally:
+            self.__mtx.release()
+
+    def errorHandler(self, ws, err):
+        self.__log.error('%swebsocket error: %s' % (self.__loggingPrefix, str(err)))
+
+    def openHandler(self, ws):
+        self.__log.debug("%sestablished websocket connection with M@R" % self.__loggingPrefix)
+        self.__mtx.acquire()
+        self.__connected = True
+        self.__mtx.release()
+
+    def closeHandler(self, ws):
+        self.__log.debug("%swebsocket connection with M@R has been closed" % self.__loggingPrefix)
+
+    def __getInboundMessageCounter(self):
+        try:
+            self.__mtx.acquire()
+            return self.__inboundMessageCounter
+        finally:
+            self.__mtx.release()

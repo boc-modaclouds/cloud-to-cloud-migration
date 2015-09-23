@@ -64,7 +64,8 @@ class DbReplicator(object):
         if self.__sourceSaPassword != self.__targetSaPassword:
             raise Exception('Currently only equal sa passwords are supported')
 
-    def __testPsConnections(self, ip):
+    @staticmethod
+    def __testPsConnections(ip):
         try:
             conn = socket.socket()
             conn.connect((ip, 5985))
@@ -74,9 +75,9 @@ class DbReplicator(object):
             return False
 
     def execute(self):
-        if not self.__testPsConnections(self.__sourceDbIp):
+        if not DbReplicator.__testPsConnections(self.__sourceDbIp):
             raise Exception('Connection to %s on WinRM port failed' % self.__sourceDbIp)
-        if not self.__testPsConnections(self.__targetDbIp):
+        if not DbReplicator.__testPsConnections(self.__targetDbIp):
             raise Exception('Connection to %s on WinRM port failed' % self.__targetDbIp)
         proc = subprocess.Popen([r'C:\WINDOWS\system32\WindowsPowerShell\v1.0\powershell.exe',
                                  '-ExecutionPolicy',
