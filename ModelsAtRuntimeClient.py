@@ -34,6 +34,7 @@
 
 import datetime
 import logging
+import re
 import socket
 import sys
 import thread
@@ -83,7 +84,6 @@ class ModelsAtRuntimeClient(object):
             connected = self.__connected
             self.__mtx.release()
 
-
     def close(self):
         if self.__conn: self.__conn.close()
 
@@ -96,32 +96,45 @@ class ModelsAtRuntimeClient(object):
         additional = '!additional json-string:%s' % model
         # IMPORTANT: do not wait for a response here, you won't get it
         self.__write(additional, False)
-        self.__write('!extended { name : Deploy }', expect = '!ack {fromPeer:"Deploy", status:"completed"}')
+        self.__write('!extended { name : Deploy }', expect = '.*!ack.*completed')
+        self.__resetInbound()
+
+    def __resetInbound(self):
+        self.__mtx.acquire()
+        try:
+            self.__inboundMessageCounter = 0
+            self.__inboundMessages = []
+        finally:
+            self.__mtx.release()
 
     def __write(self, message, wait_for_response = True, timeout = 3600, expect = ''):
         if not self.__conn: self.connect()
         #self.__purgeInboundMessages()
+        expect_rgx = None
+        if expect: expect_rgx = re.compile(expect, re.IGNORECASE)
         inboundMessageCounter = self.__getInboundMessageCounter()
         self.__conn.send(message)
         if wait_for_response:
-            self.__log.info('%swaiting for completion ...' % self.__loggingPrefix)
             waiting = 0
             while waiting < timeout:
+                done = False
                 try:
                     self.__mtx.acquire()
-                    if inboundMessageCounter < self.__inboundMessageCounter:
-                        if not expect or expect in self.__inboundMessages[len(self.__inboundMessages) - 1]:
+                    while inboundMessageCounter < self.__inboundMessageCounter:
+                        if not expect_rgx or expect_rgx.match(
+                                self.__inboundMessages[len(self.__inboundMessages) - 1]['message']):
+                            done = True
                             break
                         else:
-                            inboundMessageCounter = self.__inboundMessageCounter
+                            inboundMessageCounter += 1
                 finally:
                     self.__mtx.release()
+                    if done: break
                 time.sleep(1)
                 waiting += 1
+                if waiting == 5: self.__log.info('%swaiting for completion ...' % self.__loggingPrefix)
                 if 0 == waiting % 20: sys.stdout.write('.')
             if 20 <= waiting: sys.stdout.write('\n')
-            self.__log.info('%sdeployment completed' % self.__loggingPrefix)
-
 
     def __purgeInboundMessages(self):
         try:
@@ -134,7 +147,10 @@ class ModelsAtRuntimeClient(object):
         try:
             self.__mtx.acquire()
             self.__inboundMessageCounter +=1
-            self.__inboundMessages.append((self.__inboundMessageCounter, datetime.datetime.now(), msg))
+            self.__inboundMessages.append({
+                'sequenceNumber': self.__inboundMessageCounter,
+                'timestamp': datetime.datetime.now(),
+                'message': msg})
             self.__log.debug('%sgot message from M@R: %s' % (self.__loggingPrefix, msg))
         finally:
             self.__mtx.release()
@@ -147,6 +163,7 @@ class ModelsAtRuntimeClient(object):
         self.__mtx.acquire()
         self.__connected = True
         self.__mtx.release()
+        self.__write('!listenToAny', wait_for_response = False)
 
     def closeHandler(self, ws):
         self.__log.debug("%swebsocket connection with M@R has been closed" % self.__loggingPrefix)

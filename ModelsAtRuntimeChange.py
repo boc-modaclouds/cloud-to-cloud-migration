@@ -55,6 +55,7 @@ class ModelsAtRuntimeChange(object):
         fd.close()
         self.__log.info('- [step %d] enacting step %d deployment model ...' % (self.__step , self.__step))
         self.__client.deploy(deploymentModel)
+        self.__log.info('- [step %d] deployment completed' % self.__step)
 
     def done(self):
         if self.__client: self.__client.close()
