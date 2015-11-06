@@ -37,6 +37,7 @@ import json
 import logging
 from MigrationWorkflow import MigrationWorkflow
 import sys
+import time
 
 
 def usage():
@@ -66,10 +67,12 @@ def main():
     __log.info('migration manifest OK')
     try:
         wfl.execute()
+        time.sleep(60)
     finally:
         wfl.done()
-
+        __log.info("Finished")
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s %(message)s [%(filename)s:%(lineno)d]', level=logging.DEBUG)
+    #logging.basicConfig(format='%(asctime)s %(message)s [%(filename)s:%(lineno)d]', level=logging.DEBUG)
+    logging.basicConfig(format='%(asctime)s %(message)s ', level=logging.INFO)
     main()

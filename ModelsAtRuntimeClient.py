@@ -86,6 +86,7 @@ class ModelsAtRuntimeClient(object):
 
     def close(self):
         if self.__conn: self.__conn.close()
+        self.__conn = None
 
     def getSnapshot(self, path = '/'):
         self.__write('!getSnapshot { path: %s }' % path)
@@ -96,7 +97,7 @@ class ModelsAtRuntimeClient(object):
         additional = '!additional json-string:%s' % model
         # IMPORTANT: do not wait for a response here, you won't get it
         self.__write(additional, False)
-        self.__write('!extended { name : Deploy }', expect = '.*!ack.*completed')
+        self.__write('!extended { name : Deploy }', expect = '.*!ack.*\.Deploy.*completed')
         self.__resetInbound()
 
     def __resetInbound(self):

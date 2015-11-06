@@ -56,9 +56,9 @@ class MigrationWorkflow (object):
         self.__workflowsSteps = [
             step2Deployment,
             step2DbMigration,
-        #   step3Deployment,
+            step3Deployment,
             step3DbMigration,
-        #   step4Deployment
+            step4Deployment
         ]
 
     def execute(self):
